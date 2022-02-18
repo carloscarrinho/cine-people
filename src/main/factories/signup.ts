@@ -3,6 +3,7 @@ import { DbAddAccount } from "../../application/usecases/add-account/db-add-acco
 import { BcryptAdapter } from "../../infrastructure/cryptography/bcrypt-adapter";
 import { MongoAccountRepository } from "../../infrastructure/db/repositories/account/mongo-account-repository";
 import { EmailValidatorAdapter } from "../../infrastructure/services/email-validator/email-validator-adapter";
+import { RabbitMQAdapter } from "../../infrastructure/services/notification-service/rabbitmq-adapter";
 import { SignUpController } from "../../presentation/controllers/signup/signup-controller";
 import { HttpRequest } from "../../presentation/protocols/http-request";
 import { HttpResponse } from "../../presentation/protocols/http-response";
@@ -31,7 +32,9 @@ export const makeSignUpController = (): SignUpController => {
   const mongoAccountRepository = new MongoAccountRepository();
   const dbAddAccount = new DbAddAccount(encrypter, mongoAccountRepository);
 
-  return new SignUpController(validation, dbAddAccount);
+  const rabbitMQAdapter = new RabbitMQAdapter();
+
+  return new SignUpController(validation, dbAddAccount, rabbitMQAdapter);
 };
 
 export const adaptSignUpController = async (req: Request, res: Response): Promise<Response> => {
