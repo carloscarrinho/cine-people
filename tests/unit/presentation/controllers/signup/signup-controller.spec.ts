@@ -3,17 +3,30 @@ import { SignUpController } from "../../../../../src/presentation/controllers/si
 import { badRequest, serverError, success } from "../../../../../src/presentation/protocols/http-helpers";
 import { HttpRequest } from "../../../../../src/presentation/protocols/http-request";
 import { Validation } from "../../../../../src/presentation/protocols/validation";
+import { Notifier } from "../../../../../src/application/contracts/notifier";
 
-const makeSut = ({ validate, add }: { validate?: Function; add?: Function }): SignUpController => {
+const makeSut = ({ 
+  validate, 
+  add, 
+  publish 
+}: { 
+  validate?: Function; 
+  add?: Function 
+  publish?: Function 
+}): SignUpController => {
   const validation = {
     validate: validate ?? jest.fn().mockReturnValueOnce(null),
   } as unknown as Validation;
 
   const addAccount = {
-    add
+    add: add ?? jest.fn().mockResolvedValue(account)
   } as unknown as AddAccount;
 
-  return new SignUpController(validation, addAccount);
+  const notifier = {
+    publish: publish ?? jest.fn().mockResolvedValue(true)
+  } as unknown as Notifier;
+
+  return new SignUpController(validation, addAccount, notifier);
 };
 
 const makeDefaultRequest = (data?: object): HttpRequest => {
@@ -110,6 +123,26 @@ describe("Unit", () => {
 
         // Then
         expect(response).toStrictEqual(success(account))
+      });
+
+      it('Should call Notifier with correct values', async () => {
+        // Given
+        const dependencies = { publish: jest.fn() }
+        const signUpController = makeSut(dependencies);
+        const request = makeDefaultRequest();
+        const message = {
+          personId: account.id,
+          eventType: "NEW_PERSON",
+        }
+
+        // When
+        await signUpController.handle(request);
+
+        // Then
+        expect(dependencies.publish).toHaveBeenCalledWith(
+          'people_service', 
+          JSON.stringify(message)
+        );
       });
     });
   });
