@@ -6,7 +6,7 @@ import env from "../../../../src/main/config/env";
 
 describe("SignUp Routes", () => {
   beforeAll(async () => {
-    await MongoHelper.connect(env.mongoUrlTest);
+    await MongoHelper.connect(env.mongoUrl);
     await RabbitMQHelper.connect(env.rabbitMQ);
   });
 

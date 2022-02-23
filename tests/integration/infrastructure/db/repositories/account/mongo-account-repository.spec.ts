@@ -11,7 +11,7 @@ describe("Integration", () => {
     describe("DB", () => {
       describe("Repositories: MongoAccountRepository", () => {
         beforeAll(async () => {
-          await MongoHelper.connect(env.mongoUrlTest);
+          await MongoHelper.connect(env.mongoUrl);
         });
 
         afterAll(async () => {
