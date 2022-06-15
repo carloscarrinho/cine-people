@@ -1,19 +1,19 @@
 import { AccountModel } from "../../../../../src/application/usecases/add-account/add-account";
 import { DbAddAccount } from "../../../../../src/application/usecases/add-account/db-add-account";
 import { Account } from "../../../../../src/domain/entities/account";
-import { Encrypter } from "../../../../../src/application/contracts/encrypter";
+import { Hasher } from "../../../../../src/application/contracts/cryptography/hasher";
 import { AccountRepository } from "../../../../../src/infrastructure/db/repositories/account/account-repository";
 
-const makeSut = ({ store, encrypt }: { store?: Function; encrypt?: Function }): DbAddAccount => {
-  const encrypter = {
-    encrypt: encrypt ?? jest.fn().mockResolvedValue("hashed_password"),
-  } as unknown as Encrypter;
+const makeSut = ({ store, hash }: { store?: Function; hash?: Function }): DbAddAccount => {
+  const hasher = {
+    hash: hash ?? jest.fn().mockResolvedValue("hashed_password"),
+  } as unknown as Hasher;
 
   const accountRepository = {
     store: store ?? jest.fn(),
   } as unknown as AccountRepository;
 
-  return new DbAddAccount(encrypter, accountRepository);
+  return new DbAddAccount(hasher, accountRepository);
 };
 
 const makeAccountModel = (data?: object): AccountModel => ({
@@ -35,9 +35,9 @@ describe("Unit", () => {
   describe("Application", () => {
     describe("Usecases: AddAccount", () => {
       describe("DbAddAccount", () => {
-        it("Should call Encrypter with the provided password", async () => {
+        it("Should call Hasher with the provided password", async () => {
           // Given
-          const dependencies = { encrypt: jest.fn() };
+          const dependencies = { hash: jest.fn() };
           const dbAddAccount = makeSut(dependencies);
           const accountModel = makeAccountModel();
 
@@ -45,13 +45,13 @@ describe("Unit", () => {
           await dbAddAccount.add(accountModel);
 
           // Then
-          expect(dependencies.encrypt).toHaveBeenCalledWith(accountModel.password);
+          expect(dependencies.hash).toHaveBeenCalledWith(accountModel.password);
         });
 
-        it("Should throw an error if Encrypter throws", async () => {
+        it("Should throw an error if Hasher throws", async () => {
           // Given
           const dependencies = {
-            encrypt: jest.fn().mockImplementationOnce(() => {
+            hash: jest.fn().mockImplementationOnce(() => {
               throw new Error();
             }),
           };
@@ -68,7 +68,7 @@ describe("Unit", () => {
           // Given
           const hashedPassword = "hashed_password";
           const dependencies = {
-            encrypt: jest.fn().mockResolvedValue(hashedPassword),
+            hash: jest.fn().mockResolvedValue(hashedPassword),
             store: jest.fn(),
           };
           const dbAddAccount = makeSut(dependencies);

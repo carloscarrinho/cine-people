@@ -1,46 +1,99 @@
-import bcrypt from "bcrypt";
-import { Encrypter } from "../../../../src/application/contracts/encrypter";
-import { BcryptAdapter } from "../../../../src/infrastructure/cryptography/bcrypt-adapter";
+import bcrypt from 'bcrypt'
+import { BcryptAdapter } from '../../../../src/infrastructure/cryptography/bcrypt-adapter'
 
-const hashedValue = "hashed_value";
-const valueToHash = "valid_password";
-const salt = 12;
+const hashedValue = 'hashed_value'
+const valueToHash = 'valid_password'
+const salt = 12
 
-jest.mock("bcrypt", () => ({
-  async hash(): Promise<string> {
-    return await new Promise((resolve) => resolve(hashedValue));
+jest.mock('bcrypt', () => ({
+  async hash (): Promise<string> {
+    return await new Promise((resolve) => resolve(hashedValue))
   },
-}));
+  async compare (): Promise<boolean> {
+    return await new Promise((resolve) => resolve(true))
+  }
+}))
 
-const makeSut = (salt?: number): Encrypter => {
-  return new BcryptAdapter(salt);
-};
+const makeSut = (salt?: number): BcryptAdapter => {
+  return new BcryptAdapter(salt)
+}
 
-describe("Bcrypt Adapter", () => {
-  it("Should call bcrypt with correct values", async () => {
-    const hashSpy = jest.spyOn(bcrypt, "hash");
-    const sut = makeSut(salt);
+describe('Bcrypt Adapter', () => {
+  describe('hash()', () => {
+    it('Should call bcrypt.hash with correct values', async () => {
+      const hashSpy = jest.spyOn(bcrypt, 'hash')
+      const sut = makeSut(salt)
 
-    await sut.encrypt(valueToHash);
+      await sut.hash(valueToHash)
 
-    expect(hashSpy).toHaveBeenCalledWith(valueToHash, salt);
-  });
+      expect(hashSpy).toHaveBeenCalledWith(valueToHash, salt)
+    })
 
-  it("Should return a hash on success", async () => {
-    const sut = makeSut();
+    it('Should return a hash on success', async () => {
+      const sut = makeSut()
 
-    const hash = await sut.encrypt(valueToHash);
+      const hash = await sut.hash(valueToHash)
 
-    expect(hash).toBe(hashedValue);
-  });
+      expect(hash).toBe(hashedValue)
+    })
 
-  it("Should throw an error if bcrypt throws", async () => {
-    bcrypt.hash = jest.fn().mockReturnValueOnce(new Promise((resolve, reject) => reject(new Error())));
+    it('Should throw an error if bcrypt.hash throws', async () => {
+      bcrypt.hash = jest.fn().mockReturnValueOnce(
+        new Promise((resolve, reject) => reject(new Error()))
+      )
 
-    const sut = makeSut(salt);
+      const sut = makeSut(salt)
 
-    const promise = sut.encrypt(valueToHash);
+      const promise = sut.hash(valueToHash)
 
-    await expect(promise).rejects.toThrow();
-  });
-});
+      await expect(promise).rejects.toThrow()
+    })
+  })
+
+  describe('compare', () => {
+    it('Should call bcrypt.compare with correct values', async () => {
+      const compareSpy = jest.spyOn(bcrypt, 'compare')
+      const parameters = { value: 'any_value', hash: 'any_hash' }
+      const sut = makeSut(salt)
+
+      await sut.compare(parameters.value, parameters.hash)
+
+      expect(compareSpy).toHaveBeenCalledWith(parameters.value, parameters.hash)
+    })
+
+    it('Should return true if comparation succeeds', async () => {
+      jest.spyOn(bcrypt, 'compare')
+      const parameters = { value: 'any_value', hash: 'any_hash' }
+      const sut = makeSut(salt)
+
+      const result = await sut.compare(parameters.value, parameters.hash)
+
+      expect(result).toBeTruthy()
+    })
+
+    it('Should return false if comparation fails', async () => {
+      // jest.spyOn(bcrypt, 'compare').mockImplementation(() => false)
+      bcrypt.compare = jest.fn().mockReturnValueOnce(false)
+
+      const parameters = { value: 'any_value', hash: 'any_hash' }
+      const sut = makeSut(salt)
+
+      const result = await sut.compare(parameters.value, parameters.hash)
+
+      expect(result).toBe(false)
+    })
+
+    it('Should throw an error if bcrypt.compare throws', async () => {
+      bcrypt.compare = jest.fn().mockReturnValueOnce(
+        new Promise((resolve, reject) => reject(new Error()))
+      )
+
+      const parameters = { value: 'any_value', hash: 'any_hash' }
+      const sut = makeSut(salt)
+
+      const promise = sut.compare(parameters.value, parameters.hash)
+
+      await expect(promise).rejects.toThrow()
+    })
+  })
+})

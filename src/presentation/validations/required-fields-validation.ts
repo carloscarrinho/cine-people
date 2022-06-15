@@ -9,6 +9,6 @@ export class RequiredFieldsValidation implements Validation {
       if(!input[field]) return new MissingParamError(field);
     }
 
-    return null
+    return undefined
   }
 }
